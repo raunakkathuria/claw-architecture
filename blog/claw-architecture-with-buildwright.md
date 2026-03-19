@@ -68,7 +68,7 @@ That keeps the "separate brains" part intact without breaking real collaboration
 
 Buildwright solves a different problem.
 
-It is not the agent runtime. It is the **workflow layer**: research, spec generation, approval, implementation, verification, review, and shipping. If you install the full Buildwright project workflow in a repository, you get commands like:
+It is not the agent runtime. It is the **workflow layer**: research, spec generation, approval, implementation, verification, review, and shipping. It also includes a pure research mode (`/bw-plan`) for analysis tasks that should not touch code at all. If you install the full Buildwright project workflow in a repository, you get commands like:
 
 - `/bw-analyse`
 - `/bw-new-feature`
@@ -76,6 +76,7 @@ It is not the agent runtime. It is the **workflow layer**: research, spec genera
 - `/bw-quick`
 - `/bw-verify`
 - `/bw-ship`
+- `/bw-plan`
 
 That is powerful, but it only exists after you install Buildwright properly in the project and sync the generated command files.
 
