@@ -69,6 +69,35 @@ npm run check
 | PUT | `/api/members/:id` | update member |
 | DELETE | `/api/members/:id` | delete member |
 
+### Member fields
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `id` | integer | auto-assigned |
+| `name` | string | required |
+| `role` | string | required |
+| `email` | string | required, unique |
+| `department` | string | optional |
+| `createdAt` | ISO timestamp | set on create |
+| `updatedAt` | ISO timestamp | updated on write |
+
+### Create / update body
+
+```json
+{
+  "name": "Jordan Lee",
+  "role": "Frontend Engineer",
+  "email": "jordan.lee@example.com",
+  "department": "Engineering"
+}
+```
+
+`PUT` accepts any subset of fields; omitted fields are preserved.
+
+## Database notes
+
+The schema uses `CREATE TABLE IF NOT EXISTS`, so `npm run db:init` is safe to run against an existing database — it will not drop or reset data. A migration in `ensureDatabase()` automatically adds any new columns (such as `department`) to pre-existing databases, so upgrading from an older checkout requires no manual steps.
+
 ## Example cross-layer feature prompt
 
 ```
