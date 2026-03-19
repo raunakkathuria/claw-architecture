@@ -2,55 +2,36 @@
 
 One brain. Multiple claws. Each claw owns one layer.
 
-This repository packages three things that now line up cleanly:
+This repository is a working reference for running a multi-agent coding setup with [OpenClaw](https://openclaw.ai). The idea: instead of one agent that tries to understand every layer of your stack, you give each domain its own agent and a shared orchestrator that coordinates across them.
 
-1. a working demo app under `team-directory/`
-2. an honest, publishable blog post under `blog/`
-3. an OpenClaw workspace bootstrap under `openclaw/`
+## What's in here
 
-The original draft mixed a good idea with setup claims that were stronger than the code. This version fixes that.
+| Directory | What it is |
+| --- | --- |
+| `example/` | A runnable full-stack demo app (UI + API + SQLite + Nginx) |
+| `openclaw/` | Workspace bootstrap for running the multi-agent setup locally |
+| `blog/` | The write-up behind this repo |
 
-## What is included
-
-- **Working demo app:** static UI + Node.js API + SQLite + optional Nginx gateway
-- **Automated validation:** API tests and a smoke test
-- **OpenClaw bootstrap:** isolated agent workspaces with a shared `project/` symlink into this repository
-- **Shared Buildwright skill install:** useful as workflow guidance inside OpenClaw
-
-## What is not claimed anymore
-
-- The repository does **not** pretend the full Buildwright slash-command workflow is already installed.
-- The repository does **not** claim automatic PR creation, linting, security scans, or code review unless you separately install the full Buildwright project workflow.
-
-## Repository layout
+## The architecture
 
 ```
-claw-architecture/
-├── blog/
-│   └── claw-architecture-with-buildwright.md
-├── openclaw/
-│   ├── README.md
-│   ├── setup.sh
-│   ├── agents-snippet.json
-│   └── workspace-*/
-└── team-directory/
-    ├── README.md
-    ├── package.json
-    ├── docker-compose.yml
-    ├── api/
-    ├── database/
-    ├── gateway/
-    ├── scripts/
-    ├── tests/
-    └── ui/
+                     Architect agent
+                     (orchestration)
+                           |
+           ┌───────────────┼───────────────┐
+           ▼               ▼               ▼
+       UI claw         API claw         DB claw
+    presentation      contracts       schema/data
 ```
 
-## Quick start: demo app
+Each agent workspace is isolated — its own memory, notes, and working directory. A `project/` symlink inside each workspace points at the same shared repository checkout, so agents collaborate on the same codebase without stepping on each other.
+
+## Quick start: example app
 
 ### Local
 
 ```bash
-cd team-directory
+cd example
 npm run db:init
 npm run api
 ```
@@ -58,7 +39,7 @@ npm run api
 In a second terminal:
 
 ```bash
-cd team-directory
+cd example
 npm run ui
 ```
 
@@ -67,7 +48,7 @@ Open `http://localhost:3000`.
 ### Docker
 
 ```bash
-cd team-directory
+cd example
 docker compose up --build
 ```
 
@@ -76,11 +57,13 @@ Open `http://localhost`.
 ### Validate
 
 ```bash
-cd team-directory
+cd example
 npm run check
 ```
 
-## Quick start: OpenClaw
+`npm run check` runs the API test suite and a smoke test against a live server. No install step required — the app has zero runtime dependencies.
+
+## Quick start: OpenClaw multi-agent setup
 
 1. Install and onboard OpenClaw first.
 2. Run the bootstrap script:
@@ -90,15 +73,32 @@ cd openclaw
 ./setup.sh /absolute/path/to/claw-architecture
 ```
 
-3. Merge `openclaw/agents-snippet.json` into your `~/.openclaw/openclaw.json` after onboarding.
+3. Merge `openclaw/agents-snippet.json` into your `~/.openclaw/openclaw.json`.
 
-Read `openclaw/README.md` for the exact flow.
+See `openclaw/README.md` for the full walkthrough.
 
-## Blog
+## Repository layout
 
-The publishable post lives here:
-
-- `blog/claw-architecture-with-buildwright.md`
+```
+claw-architecture/
+├── example/
+│   ├── README.md
+│   ├── package.json
+│   ├── docker-compose.yml
+│   ├── api/
+│   ├── database/
+│   ├── gateway/
+│   ├── scripts/
+│   ├── tests/
+│   └── ui/
+├── openclaw/
+│   ├── README.md
+│   ├── setup.sh
+│   ├── agents-snippet.json
+│   └── workspace-*/
+└── blog/
+    └── claw-architecture-with-buildwright.md
+```
 
 ## License
 

@@ -5,7 +5,7 @@ You own UI changes for the Team Directory demo.
 ## Primary scope
 
 ```
-project/team-directory/ui/
+project/example/ui/
 ```
 
 ## Responsibilities
@@ -20,6 +20,6 @@ project/team-directory/ui/
 Run the repository checks after UI work:
 
 ```bash
-cd project/team-directory
+cd project/example
 npm run check
 ```

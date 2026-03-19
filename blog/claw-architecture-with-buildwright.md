@@ -98,7 +98,7 @@ Why this stack?
 
 Because the point of the repository is not framework novelty. The point is a clean multi-layer target for agent coordination.
 
-The app lives in `team-directory/` and includes:
+The app lives in `example/` and includes:
 
 - a member list UI
 - member create/delete flows
@@ -120,7 +120,7 @@ claw-architecture/
 │   ├── setup.sh
 │   ├── agents-snippet.json
 │   └── workspace-*/
-└── team-directory/
+└── example/
     ├── api/
     ├── database/
     ├── gateway/
@@ -134,7 +134,7 @@ claw-architecture/
 The local developer path is intentionally simple and does not require `npm install` because the demo uses the Node.js runtime plus built-in SQLite support.
 
 ```bash
-cd team-directory
+cd example
 npm run db:init
 npm run api
 ```
@@ -142,7 +142,7 @@ npm run api
 In a second terminal:
 
 ```bash
-cd team-directory
+cd example
 npm run ui
 ```
 
@@ -161,7 +161,7 @@ That runs the automated API tests and a smoke test.
 If you want the full UI -> gateway -> API shape, use Docker Compose:
 
 ```bash
-cd team-directory
+cd example
 docker compose up --build
 ```
 
@@ -285,7 +285,7 @@ The architect pulls the work back together and runs the project checks.
 In this demo repo, that means running the actual project validation that exists today:
 
 ```bash
-cd project/team-directory
+cd project/example
 npm run check
 ```
 
@@ -297,7 +297,7 @@ Each agent workspace in `openclaw/workspace-*/` now points at the real file tree
 
 The architect instructions tell the agent to:
 
-- work from `project/team-directory/`
+- work from `project/example/`
 - write interface notes in its private workspace
 - delegate by domain
 - run `npm run check` at integration time

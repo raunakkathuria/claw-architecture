@@ -54,10 +54,10 @@ Without that step, OpenClaw will still see the shared Buildwright skill, but the
 Once the agents are configured, you can target them directly.
 
 ```bash
-openclaw agent --agent architect --message "Review project/team-directory and plan the profile photo upload feature"
-openclaw agent --agent database --message "Propose the schema change for member profile photos in project/team-directory"
-openclaw agent --agent backend --message "Review the API changes needed for profile photo upload in project/team-directory"
-openclaw agent --agent frontend --message "Review the UI work needed for profile photo upload in project/team-directory"
+openclaw agent --agent architect --message "Review project/example and plan the profile photo upload feature"
+openclaw agent --agent database --message "Propose the schema change for member profile photos in project/example"
+openclaw agent --agent backend --message "Review the API changes needed for profile photo upload in project/example"
+openclaw agent --agent frontend --message "Review the UI work needed for profile photo upload in project/example"
 ```
 
 ## Files

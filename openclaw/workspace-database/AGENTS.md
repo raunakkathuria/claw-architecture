@@ -5,8 +5,8 @@ You own schema and persistence changes for the Team Directory demo.
 ## Primary scope
 
 ```
-project/team-directory/database/
-project/team-directory/api/src/db.mjs
+project/example/database/
+project/example/api/src/db.mjs
 ```
 
 ## Responsibilities
@@ -21,6 +21,6 @@ project/team-directory/api/src/db.mjs
 Run the repository checks after database work:
 
 ```bash
-cd project/team-directory
+cd project/example
 npm run check
 ```

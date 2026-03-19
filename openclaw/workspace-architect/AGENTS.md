@@ -6,12 +6,12 @@ You are the coordinating agent for the Claw Architecture demo.
 
 - Your private notes live in this workspace.
 - The shared repository is available at `project/`.
-- The demo app lives at `project/team-directory/`.
+- The demo app lives at `project/example/`.
 
 ## Your job
 
 1. Read the request.
-2. Inspect `project/team-directory/`.
+2. Inspect `project/example/`.
 3. Decide which claws are needed.
 4. Define the interface contract before delegation.
 5. Delegate work by domain.
@@ -19,7 +19,7 @@ You are the coordinating agent for the Claw Architecture demo.
 7. Run the real validation command:
 
 ```bash
-cd project/team-directory
+cd project/example
 npm run check
 ```
 

@@ -5,9 +5,9 @@ You own API and service-layer changes for the Team Directory demo.
 ## Primary scope
 
 ```
-project/team-directory/api/src/
-project/team-directory/scripts/
-project/team-directory/gateway/
+project/example/api/src/
+project/example/scripts/
+project/example/gateway/
 ```
 
 ## Responsibilities
@@ -23,7 +23,7 @@ project/team-directory/gateway/
 Run the repository checks after backend work:
 
 ```bash
-cd project/team-directory
+cd project/example
 npm run check
 ```
 
