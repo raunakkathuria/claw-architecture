@@ -26,47 +26,21 @@ This repository is a working reference for running a multi-agent coding setup wi
 
 Each agent workspace is isolated — its own memory, notes, and working directory. A `project/` symlink inside each workspace points at the same shared repository checkout, so agents collaborate on the same codebase without stepping on each other.
 
-## Quick start: example app
-
-### Local
+## Quick start
 
 ```bash
 cd example
-npm run db:init
-npm run api
-```
-
-In a second terminal:
-
-```bash
-cd example
+npm run db:init && npm run api
+# second terminal:
 npm run ui
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. See [`example/README.md`](example/README.md) for Docker, validation, and API details.
 
-### Docker
+## Set up the multi-agent workspace
 
-```bash
-cd example
-docker compose up --build
-```
-
-Open `http://localhost`.
-
-### Validate
-
-```bash
-cd example
-npm run check
-```
-
-`npm run check` runs the API test suite and a smoke test against a live server. No install step required — the app has zero runtime dependencies.
-
-## Quick start: OpenClaw multi-agent setup
-
-1. Install and onboard OpenClaw first.
-2. Run the bootstrap script:
+1. Install and onboard [OpenClaw](https://openclaw.ai) first.
+2. Run the bootstrap:
 
 ```bash
 cd openclaw
@@ -75,29 +49,70 @@ cd openclaw
 
 3. Merge `openclaw/agents-snippet.json` into your `~/.openclaw/openclaw.json`.
 
-See `openclaw/README.md` for the full walkthrough.
+This creates four isolated agent workspaces (architect, frontend, backend, database), each with a shared `project/` symlink back to this repo. See [`openclaw/README.md`](openclaw/README.md) for the full walkthrough.
+
+## How the claw model works in practice
+
+Once the workspace bootstrap is done, here is what a typical feature request looks like end to end.
+
+### 1. Send the feature to the architect
+
+```
+You → Architect agent:
+
+"Add a department filter to the member list.
+ Members should be filterable by department on both the API and the UI."
+```
+
+### 2. Architect plans and defines the interface contract
+
+The architect inspects the codebase (`project/example/`) and writes down the cross-layer contract before any code changes:
+
+```
+Field name:  department  (already in DB schema)
+API change:  GET /api/members?department=Engineering
+UI change:   dropdown filter above the member list
+No gateway change needed.
+```
+
+### 3. Architect delegates by domain
+
+```
+→ DB claw:   confirm department column exists; add index if needed
+→ API claw:  add ?department= query param to GET /api/members
+→ UI claw:   add department dropdown; filter member list on change
+```
+
+Each claw works within its own files:
+
+| Claw | Owns |
+| --- | --- |
+| DB | `example/database/` |
+| API | `example/api/src/` |
+| UI | `example/ui/` |
+
+### 4. Architect integrates and validates
+
+Once the claws report back, the architect pulls the changes together and runs the real check:
+
+```bash
+cd project/example
+npm run check
+```
+
+All 4 tests pass → ship it.
+
+---
+
+The key discipline: **the architect defines the contract first**. Field names, response shapes, and validation rules are agreed up front so the DB, API, and UI claws never drift out of sync.
 
 ## Repository layout
 
 ```
 claw-architecture/
-├── example/
-│   ├── README.md
-│   ├── package.json
-│   ├── docker-compose.yml
-│   ├── api/
-│   ├── database/
-│   ├── gateway/
-│   ├── scripts/
-│   ├── tests/
-│   └── ui/
-├── openclaw/
-│   ├── README.md
-│   ├── setup.sh
-│   ├── agents-snippet.json
-│   └── workspace-*/
-└── blog/
-    └── claw-architecture-with-buildwright.md
+├── example/          ← runnable demo app
+├── openclaw/         ← agent workspace bootstrap
+└── blog/             ← the write-up
 ```
 
 ## License

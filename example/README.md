@@ -1,24 +1,20 @@
-# Team Directory demo
+# Example app
 
-This is the runnable demo app used in the Claw Architecture blog post.
+A full-stack team directory used as the demo target for [Claw Architecture](../README.md). Intentionally dependency-light so it is easy to run and easy for agents to reason about.
 
 ## Stack
 
 - UI: static HTML, CSS, and browser JavaScript
 - API: Node.js HTTP server
 - Database: SQLite
-- Gateway: Nginx (optional, for Docker/local reverse-proxy shape)
-
-## Why this stack
-
-The demo is intentionally dependency-light so the repository is easy to run and easy for agents to reason about.
+- Gateway: Nginx (optional, for the Docker flow)
 
 ## Requirements
 
 - Node.js `22.16+`
-- Docker, if you want the gateway-based flow
+- Docker (only needed for the gateway flow)
 
-No `npm install` step is required for the local flow.
+No `npm install` step required.
 
 ## Local run
 
@@ -35,9 +31,7 @@ Terminal 2:
 npm run ui
 ```
 
-Open `http://localhost:3000`.
-
-The standalone UI server talks directly to `http://localhost:3001/api`.
+Open `http://localhost:3000`. The UI talks directly to `http://localhost:3001/api`.
 
 ## Docker run
 
@@ -45,20 +39,24 @@ The standalone UI server talks directly to `http://localhost:3001/api`.
 docker compose up --build
 ```
 
-Open `http://localhost`.
-
-In Docker, Nginx proxies the UI and API.
+Open `http://localhost`. Nginx proxies both the UI and API.
 
 ## Validation
 
 ```bash
-npm run test
-npm run smoke
-# or
 npm run check
 ```
 
-## Current API
+Runs the API test suite and a smoke test against a live server. No external services required.
+
+You can also run them separately:
+
+```bash
+npm run test   # unit/integration tests
+npm run smoke  # end-to-end smoke test
+```
+
+## API reference
 
 | Method | Route | Purpose |
 | --- | --- | --- |
@@ -96,17 +94,19 @@ npm run check
 
 ## Database notes
 
-The schema uses `CREATE TABLE IF NOT EXISTS`, so `npm run db:init` is safe to run against an existing database — it will not drop or reset data. A migration in `ensureDatabase()` automatically adds any new columns (such as `department`) to pre-existing databases, so upgrading from an older checkout requires no manual steps.
+`npm run db:init` is safe to run against an existing database — the schema uses `CREATE TABLE IF NOT EXISTS` and a migration in `ensureDatabase()` adds any new columns automatically.
 
-## Example cross-layer feature prompt
+## Example cross-layer feature
 
 ```
 Add profile photo upload for team members.
 ```
 
-That would naturally touch:
+This naturally touches every layer — which is exactly why it is a good target for the claw model:
 
-- `database/` for schema changes
-- `api/src/` for new response fields and upload handling
-- `gateway/nginx.conf` for file serving
-- `ui/` for the upload and display flow
+| Layer | Change |
+| --- | --- |
+| `database/` | add `photo_url` column |
+| `api/src/` | accept upload, return `photoUrl` in responses |
+| `gateway/nginx.conf` | expose `/uploads/` as a public route |
+| `ui/` | upload control + photo rendering |
