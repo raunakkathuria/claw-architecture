@@ -19,6 +19,13 @@ export function ensureDatabase(databasePath = getDefaultDatabasePath()) {
   const schemaSql = readFileSync(path.join(databaseDirectory, "schema.sql"), "utf8");
   db.exec(schemaSql);
 
+  // Migration: add department column if it was added after the DB was first created
+  try {
+    db.exec("ALTER TABLE members ADD COLUMN department TEXT");
+  } catch {
+    // Column already exists — safe to ignore
+  }
+
   const countRow = db.prepare("SELECT COUNT(*) AS count FROM members").get();
   const count = Number(countRow?.count ?? 0);
   if (count === 0) {
@@ -39,6 +46,7 @@ function mapMember(row) {
     name: row.name,
     role: row.role,
     email: row.email,
+    department: row.department ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -49,7 +57,7 @@ export function createMemberStore(db) {
     list() {
       const rows = db.prepare(
         `
-          SELECT id, name, role, email, created_at, updated_at
+          SELECT id, name, role, email, department, created_at, updated_at
           FROM members
           ORDER BY name ASC
         `,
@@ -61,7 +69,7 @@ export function createMemberStore(db) {
     get(id) {
       const row = db.prepare(
         `
-          SELECT id, name, role, email, created_at, updated_at
+          SELECT id, name, role, email, department, created_at, updated_at
           FROM members
           WHERE id = ?
         `,
