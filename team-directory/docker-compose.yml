@@ -1,0 +1,33 @@
+services:
+  api:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -lc "node --no-warnings api/src/index.mjs"
+    environment:
+      PORT: "3001"
+      DATABASE_PATH: /app/database/team.db
+    volumes:
+      - .:/app
+    expose:
+      - "3001"
+
+  ui:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -lc "node scripts/serve-ui.mjs"
+    environment:
+      UI_PORT: "3000"
+    volumes:
+      - .:/app
+    expose:
+      - "3000"
+
+  gateway:
+    image: nginx:1.27-alpine
+    depends_on:
+      - api
+      - ui
+    ports:
+      - "80:80"
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/nginx.conf:ro

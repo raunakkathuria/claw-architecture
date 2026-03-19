@@ -1,0 +1,17 @@
+{
+  "name": "team-directory-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "scripts": {
+    "db:init": "node --no-warnings scripts/init-db.mjs",
+    "api": "node --no-warnings api/src/index.mjs",
+    "ui": "node scripts/serve-ui.mjs",
+    "test": "node --no-warnings --test tests/api.test.mjs",
+    "smoke": "node --no-warnings scripts/smoke-test.mjs",
+    "check": "npm run test && npm run smoke"
+  }
+}

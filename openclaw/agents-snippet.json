@@ -1,0 +1,27 @@
+{
+  "_comment": "Replace /your/home with your actual home directory path (e.g. /Users/yourname or /home/yourname). The setup.sh script creates these workspace directories for you.",
+  "agents": {
+    "list": [
+      {
+        "id": "architect",
+        "name": "Brain",
+        "workspace": "/your/home/.openclaw/workspace-architect"
+      },
+      {
+        "id": "frontend",
+        "name": "UI Claw",
+        "workspace": "/your/home/.openclaw/workspace-frontend"
+      },
+      {
+        "id": "backend",
+        "name": "API Claw",
+        "workspace": "/your/home/.openclaw/workspace-backend"
+      },
+      {
+        "id": "database",
+        "name": "DB Claw",
+        "workspace": "/your/home/.openclaw/workspace-database"
+      }
+    ]
+  }
+}

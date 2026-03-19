@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Team Directory</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="hero">
+        <p class="eyebrow">Claw Architecture demo</p>
+        <h1>Team Directory</h1>
+        <p class="subtitle">
+          A dependency-light demo app for experimenting with UI, API, database,
+          and gateway changes together.
+        </p>
+      </header>
+
+      <main class="layout">
+        <section class="panel panel-form">
+          <h2>Add team member</h2>
+          <form id="member-form">
+            <label>
+              <span>Name</span>
+              <input id="name" name="name" type="text" required />
+            </label>
+            <label>
+              <span>Role</span>
+              <input id="role" name="role" type="text" required />
+            </label>
+            <label>
+              <span>Email</span>
+              <input id="email" name="email" type="email" required />
+            </label>
+            <button type="submit">Create member</button>
+          </form>
+          <p id="form-message" class="message" aria-live="polite"></p>
+        </section>
+
+        <section class="panel panel-list">
+          <div class="panel-header">
+            <div>
+              <h2>Members</h2>
+              <p class="panel-copy">Loaded from the Node.js API backed by SQLite.</p>
+            </div>
+            <button id="refresh-button" type="button" class="secondary">Refresh</button>
+          </div>
+
+          <div id="status" class="message" aria-live="polite"></div>
+          <div id="member-list" class="member-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
