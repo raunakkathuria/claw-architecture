@@ -13,7 +13,7 @@ That single sentence can touch storage, routing, API contracts, validation rules
 - the database and API disagree on field names
 - the UI assumes a response shape the backend never shipped
 - the gateway is forgotten until the end
-- one “quick fix” turns into a cross-layer regression hunt
+- one "quick fix" turns into a cross-layer regression hunt
 
 I like a different mental model for this kind of work:
 
@@ -34,7 +34,7 @@ The brain does decomposition and integration. Each claw owns one domain.
 
 That is the core of what I call **Claw Architecture**.
 
-This post walks through a version of that setup that is now honest and reproducible:
+This post walks through a complete, runnable implementation of that setup:
 
 - a working demo app you can run locally
 - an OpenClaw multi-agent workspace bootstrap
@@ -55,14 +55,14 @@ In practical terms, that means you can keep:
 
 The key implementation detail is easy to miss: **the agent workspace is the default working directory**. If you want multiple agents to collaborate on the same repository, each isolated workspace still needs a clean path into that shared codebase.
 
-The fixed setup in this repository handles that by creating a `project/` symlink inside every agent workspace that points back to the same checkout of this repository.
+This setup handles that by creating a `project/` symlink inside every agent workspace that points back to the same checkout of this repository.
 
 Each agent gets:
 
 - a private workspace for notes and memory
 - a shared `project/` entry that points to the same codebase
 
-That keeps the “separate brains” part intact without breaking real collaboration.
+That keeps the "separate brains" part intact without breaking real collaboration.
 
 ## What Buildwright adds
 
@@ -79,12 +79,12 @@ It is not the agent runtime. It is the **workflow layer**: research, spec genera
 
 That is powerful, but it only exists after you install Buildwright properly in the project and sync the generated command files.
 
-This repository now makes that distinction explicit:
+This repository makes that distinction explicit:
 
 - it **does** install the shared Buildwright skill as OpenClaw guidance
-- it **does not** pretend the full `/bw-*` workflow is already installed in the repo
+- it **does not** include the full `/bw-*` workflow out of the box
 
-If you want the full command set, run Buildwright’s own project setup in this repository after cloning it.
+If you want the full command set, run Buildwright's own project setup in this repository after cloning it.
 
 ## The demo app
 
@@ -105,9 +105,9 @@ The app lives in `example/` and includes:
 - a Node.js API with CRUD endpoints
 - SQLite schema and seed data
 - API tests and a smoke test
-- an optional Nginx gateway for the “real stack” shape
+- an optional Nginx gateway for the "real stack" shape
 
-There is no hidden “trust me” step anymore.
+Everything is verifiable: run `npm run check` and see.
 
 ## Repository structure
 
@@ -167,11 +167,11 @@ docker compose up --build
 
 Open `http://localhost`.
 
-The gateway currently proxies only the UI and API. It does **not** pre-configure an `/uploads/` route. That is deliberate, because it keeps the future “profile photo upload” example honest: adding file serving really would require a gateway change.
+The gateway currently proxies only the UI and API. It does **not** pre-configure an `/uploads/` route. That is deliberate, because it keeps the future "profile photo upload" example honest: adding file serving really would require a gateway change.
 
 ## Setting up OpenClaw for the claw model
 
-The OpenClaw part of this repo is now framed as a bootstrap, not a magic full install.
+The OpenClaw part of this repo is a bootstrap, not a magic full install.
 
 ### Step 1: onboard OpenClaw first
 
@@ -186,7 +186,7 @@ cd openclaw
 ./setup.sh /absolute/path/to/claw-architecture
 ```
 
-The script now does four concrete things:
+The script does four concrete things:
 
 1. installs the shared Buildwright skill to `~/.openclaw/skills/buildwright/SKILL.md`
 2. creates isolated workspaces for architect, frontend, backend, and database agents
@@ -203,7 +203,7 @@ The snippet defines the extra agents and points each one at its own workspace. I
 
 ### Step 4: optionally install full Buildwright in the repo
 
-If you want Buildwright’s slash commands in this repository, install the official project workflow here too:
+If you want Buildwright's slash commands in this repository, install the official project workflow here too:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/raunakkathuria/buildwright/main/setup.sh | bash
@@ -212,11 +212,11 @@ make sync
 
 After that, the repo can support the `/bw-*` command layer in the way Buildwright documents.
 
-Without that project-level install, you still have the shared Buildwright skill as guidance plus the OpenClaw workspaces, but you should not market the repo as if `/bw-claw` already exists out of the box.
+Without that project-level install, you still have the shared Buildwright skill as guidance plus the OpenClaw workspaces — which is a fully working setup on its own.
 
 ## A feature that benefits from claws
 
-Let’s go back to the example:
+Let's go back to the example:
 
 > Add profile photo upload for team members.
 
@@ -282,18 +282,16 @@ Example concern set:
 
 The architect pulls the work back together and runs the project checks.
 
-In this demo repo, that means running the actual project validation that exists today:
+In this demo repo, that means:
 
 ```bash
 cd project/example
 npm run check
 ```
 
-Not “security scan, lint, code review, and PR shipped” unless the full Buildwright workflow has been installed.
+## How the agent workspaces are structured
 
-## What the fixed agent docs now do
-
-Each agent workspace in `openclaw/workspace-*/` now points at the real file tree and the real validation command.
+Each agent workspace in `openclaw/workspace-*/` points at the real file tree and uses the real validation command.
 
 The architect instructions tell the agent to:
 
@@ -306,9 +304,9 @@ The frontend, backend, and database instructions each scope the agent to the fil
 
 That gives you separation without pretending the agents are trapped in perfect sandboxes.
 
-## Why I still like this pattern
+## Why I like this pattern
 
-The real value is not “more agents = better.”
+The real value is not "more agents = better."
 
 The real value is this:
 
@@ -322,21 +320,17 @@ In other words, the architecture turns one fuzzy prompt into a small coordinatio
 
 That is a better place to be.
 
-## What this repository now guarantees
-
-This is the part I care about most, because it is where demo repositories usually get slippery.
-
-This repository now guarantees:
+## What this repository guarantees
 
 - the blog matches the code
-- the demo app runs locally
+- the demo app runs locally with no install step
 - the non-Docker flow is correct
 - the Docker flow is coherent
-- the OpenClaw setup script fetches the correct Buildwright skill path
+- the OpenClaw setup script installs the Buildwright skill and wires up the shared project path
 - the agent workspaces have a real shared path back to the repo
-- the instructions no longer claim commands or quality gates that are not actually present
+- the instructions only claim commands and quality gates that are actually present
 
-That makes it useful both as a publishable post and as a starting point for a real experiment.
+That makes it useful both as a reference post and as a starting point for a real experiment.
 
 ## Final note
 
