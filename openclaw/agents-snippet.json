@@ -1,5 +1,5 @@
 {
-  "_comment": "Replace /your/home with your actual home directory path (e.g. /Users/yourname or /home/yourname). The setup.sh script creates these workspace directories for you.",
+  "_comment": "Merge this snippet into your existing ~/.openclaw/openclaw.json after running setup.sh. Replace /your/home with your actual home directory path. Do NOT replace your entire config — only add what's missing.",
   "agents": {
     "list": [
       {
@@ -23,5 +23,36 @@
         "workspace": "/your/home/.openclaw/workspace-database"
       }
     ]
-  }
+  },
+  "bindings": [
+    {
+      "_comment": "Route inbound messages to the right agent by channel account. Each agent should have its own channel account (e.g. a separate Telegram bot). See https://docs.openclaw.ai/concepts/multi-agent",
+      "agentId": "architect",
+      "match": {
+        "channel": "telegram",
+        "accountId": "architect"
+      }
+    },
+    {
+      "agentId": "frontend",
+      "match": {
+        "channel": "telegram",
+        "accountId": "frontend"
+      }
+    },
+    {
+      "agentId": "backend",
+      "match": {
+        "channel": "telegram",
+        "accountId": "backend"
+      }
+    },
+    {
+      "agentId": "database",
+      "match": {
+        "channel": "telegram",
+        "accountId": "database"
+      }
+    }
+  ]
 }
