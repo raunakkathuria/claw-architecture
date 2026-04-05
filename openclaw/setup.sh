@@ -58,12 +58,24 @@ Next steps:
   1. Run OpenClaw onboarding if you have not already:
      openclaw onboard --install-daemon
 
-  2. Merge this snippet into your existing config:
+  2. Merge the agent snippet into your existing config:
      ${SCRIPT_DIR}/agents-snippet.json
 
-  3. Optional: install full Buildwright project workflow in the repo root:
+     Or use the agent wizard:
+     openclaw agents add architect
+     openclaw agents add frontend
+     openclaw agents add backend
+     openclaw agents add database
+
+  3. Verify routing is wired correctly:
+     openclaw agents list --bindings
+
+  4. Optional: install full Buildwright project workflow in the repo root:
      curl -sL https://raw.githubusercontent.com/raunakkathuria/buildwright/main/setup.sh | bash
      make sync
+
+  5. To keep this repo in sync with your runtime state, run:
+     ./scripts/sync.sh
 
 Each workspace now contains:
   ~/.openclaw/workspace-architect/project  -> ${REPO_ROOT}
@@ -73,4 +85,6 @@ Each workspace now contains:
 
 Shared Buildwright skill:
   ~/.openclaw/skills/buildwright/SKILL.md
+
+See openclaw/README.md for the full walkthrough.
 EOF
