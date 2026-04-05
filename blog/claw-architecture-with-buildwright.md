@@ -29,39 +29,40 @@ This post walks through a working implementation: a runnable demo app, an OpenCl
 
 OpenClaw's multi-agent model is workspace routing. Each agent gets its own isolated workspace — separate memory, separate sessions, separate working directory, separate auth profiles. They run side by side on one gateway without bleeding into each other.
 
-The real setup I'm running looks like this:
+For this repo, the workspace layout looks like this:
 
 ```
 ~/.openclaw/
-├── workspace-iraunak/              ← personal assistant
-├── workspace-content-personal/     ← content agent (this post)
-├── workspace-content-lexilint/     ← LexiLint product agent
-├── workspace-content-illyetlogical/← ill-yet-logical persona
-├── workspace-content-technical-book/
-└── workspace-content-leadership-book/
+├── workspace-architect/   ← brain (orchestration)
+├── workspace-frontend/    ← UI claw
+├── workspace-backend/     ← API claw
+└── workspace-database/    ← DB claw
 ```
 
-Each workspace is registered in `~/.openclaw/openclaw.json` under `agents.list`, and routed by channel binding — each agent has its own Telegram bot, its own account, its own conversation thread:
+Each workspace is registered in `~/.openclaw/openclaw.json` under `agents.list`, and routed by channel binding — each agent can have its own channel account (a separate Telegram bot, for example) so messages reach the right brain:
 
 ```json
 {
   "agents": {
     "list": [
-      { "id": "iraunak",           "workspace": "~/.openclaw/workspace-iraunak" },
-      { "id": "content-personal",  "workspace": "~/.openclaw/workspace-content-personal" },
-      { "id": "content-lexilint",  "workspace": "~/.openclaw/workspace-content-lexilint" }
+      { "id": "architect", "workspace": "~/.openclaw/workspace-architect" },
+      { "id": "frontend",  "workspace": "~/.openclaw/workspace-frontend" },
+      { "id": "backend",   "workspace": "~/.openclaw/workspace-backend" },
+      { "id": "database",  "workspace": "~/.openclaw/workspace-database" }
     ]
   },
   "bindings": [
-    { "agentId": "content-personal", "match": { "channel": "telegram", "accountId": "content-personal" } },
-    { "agentId": "iraunak",          "match": { "channel": "telegram", "accountId": "iraunak" } }
+    { "agentId": "architect", "match": { "channel": "telegram", "accountId": "architect" } },
+    { "agentId": "frontend",  "match": { "channel": "telegram", "accountId": "frontend" } },
+    { "agentId": "backend",   "match": { "channel": "telegram", "accountId": "backend" } },
+    { "agentId": "database",  "match": { "channel": "telegram", "accountId": "database" } }
   ]
 }
 ```
 
-Inbound messages route to the right agent. Each agent carries its own `AGENTS.md`, `SOUL.md`, `USER.md`, skills, and memory. No shared state unless you explicitly wire it.
+Inbound messages route to the right agent. Each workspace carries its own `AGENTS.md`, memory, and notes. No shared state unless you explicitly wire it.
 
-For the claw-architecture repo specifically, each agent workspace also has a `project/` symlink pointing back to the shared repository checkout — so the architect, frontend, backend, and database claws all work on the same codebase from their own isolated context.
+Each workspace also has a `project/` symlink pointing back to the shared repository checkout — so all four claws work on the same codebase from their own isolated context.
 
 Same files, different brains.
 
@@ -166,7 +167,7 @@ make sync
 
 Without that, you still have the Buildwright skill plus the OpenClaw workspaces — which is a working setup on its own.
 
-**Keeping the repo in sync:** The `scripts/sync.sh` script handles the reverse flow — runtime back to repo. It rsyncs each agent workspace into `openclaw/workspace-*/` and commits. Safe to run as a cron job.
+**Keeping the repo in sync:** The `scripts/sync.sh` script handles the reverse flow — runtime back to repo. It rsyncs each agent workspace into `agents/<id>/`, sanitises your `openclaw.json` (strips tokens and secrets), and commits. Safe to run as a cron job.
 
 ```bash
 ./scripts/sync.sh              # sync all agents + config
