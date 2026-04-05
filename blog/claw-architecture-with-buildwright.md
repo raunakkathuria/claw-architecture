@@ -1,25 +1,14 @@
 # Claw Architecture with OpenClaw and Buildwright
 
-Most AI coding setups still assume one agent will read the whole repo, understand every layer, keep every naming rule in its head, and make safe changes across the stack in one go.
+The request came in clean: *Add profile photo upload for team members.*
 
-That can work for small edits. It starts to fray when a feature crosses boundaries.
+One sentence. The kind of thing you'd schedule for a Tuesday afternoon.
 
-Think about a request like this:
+The agent started. And then the familiar unravelling: the API returned `photo_url`. The UI was reading `photoUrl`. The gateway had no route for uploaded files because nobody thought to mention it. The database added the column but the migration broke the existing seed. Four changes, four layers, four places where the assumption was slightly off — all of them invisible until everything came back together.
 
-> Add profile photo upload for team members.
+That's not an agent failure. That's what happens when you ask one thing to carry context for an entire stack.
 
-That single sentence can touch storage, routing, API contracts, validation rules, UI state, rendering, and reverse proxy configuration. A generalist agent can brute-force its way through it, but the failure modes are familiar:
-
-- the database and API disagree on field names
-- the UI assumes a response shape the backend never shipped
-- the gateway is forgotten until the end
-- one "quick fix" turns into a cross-layer regression hunt
-
-I like a different mental model for this kind of work:
-
-**one brain, multiple claws.**
-
-The brain does decomposition and integration. Each claw owns one domain.
+I've been running a different model. One brain that coordinates. Multiple claws that each own one domain. The brain doesn't try to hold the whole stack in memory — it writes down the interface contracts and delegates. Each claw reads the contract, does its part, hands the work back.
 
 ```
                          Brain
@@ -32,83 +21,84 @@ The brain does decomposition and integration. Each claw owns one domain.
       presentation       contracts           schema/data
 ```
 
-That is the core of what I call **Claw Architecture**.
+I call it **Claw Architecture**.
 
-This post walks through a complete, runnable implementation of that setup:
-
-- a working demo app you can run locally
-- an OpenClaw multi-agent workspace bootstrap
-- an optional Buildwright layer if you want slash-command workflow automation
-
-The important word is **optional**. That distinction matters.
+This post walks through a working implementation: a runnable demo app, an OpenClaw workspace bootstrap that sets up the multi-agent model, and an optional Buildwright layer for slash-command workflow automation. Optional is the important word. I'll come back to that.
 
 ## What OpenClaw does in this setup
 
-OpenClaw is the runtime layer for the agents. It gives you isolated agent workspaces, separate memory, separate sessions, and routing so you can run multiple agents side by side instead of cramming every concern into one assistant.
+OpenClaw's multi-agent model is workspace routing. Each agent gets its own isolated workspace — separate memory, separate sessions, separate working directory, separate auth profiles. They run side by side on one gateway without bleeding into each other.
 
-In practical terms, that means you can keep:
+The real setup I'm running looks like this:
 
-- an architect workspace for orchestration notes and interface contracts
-- a frontend workspace focused on UI work
-- a backend workspace focused on the API and service logic
-- a database workspace focused on schema and persistence
+```
+~/.openclaw/
+├── workspace-iraunak/              ← personal assistant
+├── workspace-content-personal/     ← content agent (this post)
+├── workspace-content-lexilint/     ← LexiLint product agent
+├── workspace-content-illyetlogical/← ill-yet-logical persona
+├── workspace-content-technical-book/
+└── workspace-content-leadership-book/
+```
 
-The key implementation detail is easy to miss: **the agent workspace is the default working directory**. If you want multiple agents to collaborate on the same repository, each isolated workspace still needs a clean path into that shared codebase.
+Each workspace is registered in `~/.openclaw/openclaw.json` under `agents.list`, and routed by channel binding — each agent has its own Telegram bot, its own account, its own conversation thread:
 
-This setup handles that by creating a `project/` symlink inside every agent workspace that points back to the same checkout of this repository.
+```json
+{
+  "agents": {
+    "list": [
+      { "id": "iraunak",           "workspace": "~/.openclaw/workspace-iraunak" },
+      { "id": "content-personal",  "workspace": "~/.openclaw/workspace-content-personal" },
+      { "id": "content-lexilint",  "workspace": "~/.openclaw/workspace-content-lexilint" }
+    ]
+  },
+  "bindings": [
+    { "agentId": "content-personal", "match": { "channel": "telegram", "accountId": "content-personal" } },
+    { "agentId": "iraunak",          "match": { "channel": "telegram", "accountId": "iraunak" } }
+  ]
+}
+```
 
-Each agent gets:
+Inbound messages route to the right agent. Each agent carries its own `AGENTS.md`, `SOUL.md`, `USER.md`, skills, and memory. No shared state unless you explicitly wire it.
 
-- a private workspace for notes and memory
-- a shared `project/` entry that points to the same codebase
+For the claw-architecture repo specifically, each agent workspace also has a `project/` symlink pointing back to the shared repository checkout — so the architect, frontend, backend, and database claws all work on the same codebase from their own isolated context.
 
-That keeps the "separate brains" part intact without breaking real collaboration.
+Same files, different brains.
 
 ## What Buildwright adds
 
-Buildwright solves a different problem.
+Buildwright solves a different problem. It's not the runtime — it's the **workflow layer**: research, spec generation, approval gates, implementation, verification, review, shipping. There's also a pure research mode (`/bw-plan`) for analysis that shouldn't touch code at all.
 
-It is not the agent runtime. It is the **workflow layer**: research, spec generation, approval, implementation, verification, review, and shipping. It also includes a pure research mode (`/bw-plan`) for analysis tasks that should not touch code at all. If you install the full Buildwright project workflow in a repository, you get commands like:
+Install the full Buildwright project workflow and you get commands like `/bw-analyse`, `/bw-new-feature`, `/bw-claw`, `/bw-quick`, `/bw-verify`, `/bw-ship`.
 
-- `/bw-analyse`
-- `/bw-new-feature`
-- `/bw-claw`
-- `/bw-quick`
-- `/bw-verify`
-- `/bw-ship`
-- `/bw-plan`
-
-That is powerful, but it only exists after you install Buildwright properly in the project and sync the generated command files.
-
-This repository makes that distinction explicit:
-
-- it **does** install the shared Buildwright skill as OpenClaw guidance
-- it **does not** include the full `/bw-*` workflow out of the box
-
-If you want the full command set, run Buildwright's own project setup in this repository after cloning it.
+This repository installs the shared Buildwright skill as OpenClaw guidance. It does **not** include the full `/bw-*` command set out of the box — that only lands after you run Buildwright's own project setup. I kept the distinction explicit because conflating them caused me real confusion early on. The skill gives the agent knowledge of the concepts. The project install gives you the actual commands.
 
 ## The demo app
 
-The sample app is intentionally small, but it is a real runnable stack.
+The sample app is intentionally small. Framework novelty isn't the point — a clean multi-layer target for agent coordination is.
 
 ```
 UI (static HTML/CSS/JS) -> Gateway (Nginx) -> API (Node.js) -> Database (SQLite)
 ```
 
-Why this stack?
+No `npm install` required. It runs on the Node.js runtime with built-in SQLite support.
 
-Because the point of the repository is not framework novelty. The point is a clean multi-layer target for agent coordination.
+```bash
+cd example
+npm run db:init
+npm run api
+# second terminal:
+npm run ui
+```
 
-The app lives in `example/` and includes:
+Open `http://localhost:3000`. Run `npm run check` to validate. For the full UI → gateway → API shape:
 
-- a member list UI
-- member create/delete flows
-- a Node.js API with CRUD endpoints
-- SQLite schema and seed data
-- API tests and a smoke test
-- an optional Nginx gateway for the "real stack" shape
+```bash
+cd example
+docker compose up --build
+```
 
-Everything is verifiable: run `npm run check` and see.
+Open `http://localhost`. One deliberate gap: the gateway doesn't pre-configure an `/uploads/` route. Adding file serving really does require a gateway change — keeping that honest was the point of the gap.
 
 ## Repository structure
 
@@ -130,221 +120,116 @@ claw-architecture/
     └── ui/
 ```
 
-## Run the demo locally
-
-The local developer path is intentionally simple and does not require `npm install` because the demo uses the Node.js runtime plus built-in SQLite support.
-
-```bash
-cd example
-npm run db:init
-npm run api
-```
-
-In a second terminal:
-
-```bash
-cd example
-npm run ui
-```
-
-Open `http://localhost:3000`.
-
-To validate the demo:
-
-```bash
-npm run check
-```
-
-That runs the automated API tests and a smoke test.
-
-## Run the demo with Docker
-
-If you want the full UI -> gateway -> API shape, use Docker Compose:
-
-```bash
-cd example
-docker compose up --build
-```
-
-Open `http://localhost`.
-
-The gateway currently proxies only the UI and API. It does **not** pre-configure an `/uploads/` route. That is deliberate, because it keeps the future "profile photo upload" example honest: adding file serving really would require a gateway change.
-
 ## Setting up OpenClaw for the claw model
 
-The OpenClaw part of this repo is a bootstrap, not a magic full install.
+The OpenClaw part is a bootstrap, not a full install.
 
-### Step 1: onboard OpenClaw first
+**Step 1:** Do normal OpenClaw onboarding first — base config, gateway, provider auth, optional channels. Don't skip this.
 
-Do the normal OpenClaw onboarding first so your base config, gateway, provider auth, and optional channels are already in place.
-
-### Step 2: bootstrap the workspaces
-
-From this repository:
+**Step 2:** From this repository:
 
 ```bash
 cd openclaw
 ./setup.sh /absolute/path/to/claw-architecture
 ```
 
-The script does four concrete things:
+The script does four things:
 
 1. installs the shared Buildwright skill to `~/.openclaw/skills/buildwright/SKILL.md`
 2. creates isolated workspaces for architect, frontend, backend, and database agents
-3. copies the agent-specific `AGENTS.md` instructions into each workspace
-4. creates a shared `project/` symlink in each workspace pointing back to this repository
+3. copies the agent-specific `AGENTS.md` and supporting files into each workspace
+4. creates a `project/` symlink in each workspace pointing back to this repository
 
-That shared `project/` link is the difference between a nice diagram and a usable setup.
+**Step 3:** Merge `openclaw/agents-snippet.json` into your `~/.openclaw/openclaw.json`. It's a snippet, not a replacement — it registers each agent with its workspace path without touching your existing provider, gateway, or channel config.
 
-### Step 3: merge the agent snippet
+Alternatively, use the agent wizard:
 
-The file `openclaw/agents-snippet.json` is intentionally just a snippet. Merge it into your `~/.openclaw/openclaw.json` after onboarding instead of replacing your entire config.
+```bash
+openclaw agents add architect
+openclaw agents add frontend
+openclaw agents add backend
+openclaw agents add database
+```
 
-The snippet defines the extra agents and points each one at its own workspace. It does not try to overwrite your existing provider, gateway, or channel settings. It also does not force a new default agent, so you can decide whether the architect should become your default or only be used via explicit targeting or bindings.
+Verify the routing is wired correctly:
 
-### Step 4: optionally install full Buildwright in the repo
+```bash
+openclaw agents list --bindings
+```
 
-If you want Buildwright's slash commands in this repository, install the official project workflow here too:
+**Step 4 (optional):** For the `/bw-*` commands:
 
 ```bash
 curl -sL https://raw.githubusercontent.com/raunakkathuria/buildwright/main/setup.sh | bash
 make sync
 ```
 
-After that, the repo can support the `/bw-*` command layer in the way Buildwright documents.
+Without that, you still have the Buildwright skill plus the OpenClaw workspaces — which is a working setup on its own.
 
-Without that project-level install, you still have the shared Buildwright skill as guidance plus the OpenClaw workspaces — which is a fully working setup on its own.
+**Keeping the repo in sync:** The `scripts/sync.sh` script handles the reverse flow — runtime back to repo. It rsyncs each agent workspace into `openclaw/workspace-*/` and commits. Safe to run as a cron job.
+
+```bash
+./scripts/sync.sh              # sync all agents + config
+./scripts/sync.sh architect  # sync one agent
+./scripts/sync.sh --dry-run    # preview without writing
+```
+
+That's how the repo stays as a living record of your actual setup, not just a starting point you forked and forgot.
 
 ## A feature that benefits from claws
 
-Let's go back to the example:
-
-> Add profile photo upload for team members.
-
-In this repo, that request is intentionally cross-cutting.
+Back to the photo upload request. You know the one.
 
 | Layer | Likely change |
-| --- | --- |
+|-------|---------------|
 | Database | add a `photo_url` column or a related asset table |
-| API | accept upload metadata or file handling and return `photoUrl` |
+| API | accept upload metadata or file handling, return `photoUrl` |
 | Gateway | expose uploaded files under a public route |
-| UI | add upload controls and render member photos |
+| UI | add upload controls, render member photos |
 
-That is exactly where a claw-style decomposition helps.
+This is where the claw decomposition earns its keep.
 
-### Architect agent
+**Architect agent** answers the cross-layer questions first. Where do files live? Is the public URL absolute or relative? Is the API storing binary files, file paths, or both? What's the canonical field name — `photo_url` or `photoUrl`? Write the interface contract. Delegate.
 
-The architect should answer the cross-layer questions first:
+**Database claw** owns the persistence decision. `photo_url` in SQLite, nullable for existing rows, migration impact, backward compatibility for current reads.
 
-- Where will files live?
-- Is the public URL absolute or relative?
-- Is the API storing binary files, file paths, or both?
-- What is the canonical field mapping across DB, API, and UI?
-- What validation rules should every claw share?
+**API claw** owns the contract. Request and response shape, validation, how the public URL is generated, whether existing member endpoints expand to include the new field.
 
-Then the architect writes down the interface contract and delegates the layer work.
+**UI claw** owns interaction. Upload input state, empty-state avatar fallback, optimistic vs confirmed update, display size, crop rules, error handling.
 
-### Database claw
-
-The database claw owns the persistence decision and naming discipline.
-
-Example concern set:
-
-- `photo_url` in SQLite
-- nullable for existing rows
-- migration/seed impact
-- backward compatibility for current reads
-
-### API claw
-
-The API claw owns the contract.
-
-Example concern set:
-
-- request and response shape
-- validation rules
-- where the file is stored
-- how the public URL is generated
-- whether existing member endpoints expand to include `photoUrl`
-
-### UI claw
-
-The UI claw owns interaction and rendering.
-
-Example concern set:
-
-- upload input state
-- empty-state avatar fallback
-- optimistic vs confirmed update
-- display size and crop rules
-- error handling
-
-### Integration pass
-
-The architect pulls the work back together and runs the project checks.
-
-In this demo repo, that means:
+**Integration pass:** the architect agent runs the check from inside its workspace, where `project/` points at the shared codebase:
 
 ```bash
 cd project/example
 npm run check
 ```
 
-## How the agent workspaces are structured
+The `photo_url` vs `photoUrl` disagreement from the opening — that's exactly the thing the architect's interface contract is meant to catch before it costs anyone two hours. Write the field name down once. Every claw reads the same document.
 
-Each agent workspace in `openclaw/workspace-*/` points at the real file tree and uses the real validation command.
+## Why this works
 
-The architect instructions tell the agent to:
+More agents that don't coordinate isn't better. It's just more confusion spread across more processes.
 
-- work from `project/example/`
-- write interface notes in its private workspace
-- delegate by domain
-- run `npm run check` at integration time
+What the claw model gives you:
 
-The frontend, backend, and database instructions each scope the agent to the files it should primarily touch.
+- the architect carries system intent across the whole feature
+- each claw carries domain context without being distracted by the rest
+- naming and contract decisions are written down, not assumed
+- the repository path is shared — same codebase, different entry points
+- integration is explicit, not accidental
 
-That gives you separation without pretending the agents are trapped in perfect sandboxes.
-
-## Why I like this pattern
-
-The real value is not "more agents = better."
-
-The real value is this:
-
-- the architect carries system intent
-- the claws carry domain context
-- shared naming rules are explicit
-- the repository path is the same for every claw
-- integration is a deliberate step instead of an accident
-
-In other words, the architecture turns one fuzzy prompt into a small coordination problem.
-
-That is a better place to be.
+That's what turns "add profile photo upload" into a tractable coordination problem instead of a cross-layer regression at 2am.
 
 ## What this repository guarantees
 
-- the blog matches the code
-- the demo app runs locally with no install step
-- the non-Docker flow is correct
-- the Docker flow is coherent
-- the OpenClaw setup script installs the Buildwright skill and wires up the shared project path
-- the agent workspaces have a real shared path back to the repo
-- the instructions only claim commands and quality gates that are actually present
+The blog matches the code. The demo runs locally with no install step. The Docker flow is coherent. The setup script installs the Buildwright skill and wires the shared project path correctly. The agent workspaces have a real path back to the repo. Every command mentioned in this post exists and runs.
 
-That makes it useful both as a reference post and as a starting point for a real experiment.
+Useful as a reference. Useful as a starting point for a real experiment.
 
-## Final note
+---
 
-I do not think every project needs multi-agent orchestration.
+I don't think every project needs this. A small feature that touches one layer is fine with one agent.
 
-But when a feature genuinely spans database, API, UI, and edge routing, I would rather have:
+But when a request genuinely spans database, API, UI, and edge routing — and the failure mode is four layers silently disagreeing about a field name — I'd rather have one agent doing decomposition, several doing domain execution, and one deliberate integration step.
 
-- one agent responsible for decomposition
-- several agents responsible for domain execution
-- one explicit integration step
-
-than a single overconfident agent improvising across the whole stack.
-
-That is Claw Architecture in one sentence:
-
-**one brain, multiple claws, shared contracts, deliberate integration.**
+**One brain. Multiple claws. Shared contracts. Deliberate integration.**
